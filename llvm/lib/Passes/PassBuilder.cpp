@@ -238,8 +238,13 @@
 #include "llvm/Transforms/Vectorize/LoopVectorize.h"
 #include "llvm/Transforms/Vectorize/SLPVectorizer.h"
 #include "llvm/Transforms/Vectorize/VectorCombine.h"
+#include "llvm/Transforms/Instrumentation/LoopProfiler.h"
 
 using namespace llvm;
+
+static cl::opt<bool> InsertTimers(
+    "insert-timers", cl::init(false), cl::ZeroOrMore,
+    cl::desc("Insert loop timers"));
 
 static cl::opt<InliningAdvisorMode> UseInlineAdvisor(
     "enable-ml-inliner", cl::init(InliningAdvisorMode::Default), cl::Hidden,
@@ -1457,6 +1462,22 @@ PassBuilder::buildModuleOptimizationPipeline(OptimizationLevel Level,
   OptimizePM.addPass(SimplifyCFGPass());
 
   OptimizePM.addPass(CoroCleanupPass());
+
+  // Loop Profiler
+
+  if (InsertTimers) {
+    LoopPassManager LPM1, LPM2;
+    FunctionPassManager FPM1, FPM2;
+    LPM1.addPass(CountLoopsPass());
+    FPM1.addPass(createFunctionToLoopPassAdaptor(std::move(LPM1)));
+    MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM1)));
+    MPM.addPass(InsertStrPass());
+
+    LPM2.addPass(InsertTimerPass());
+    FPM2.addPass(createFunctionToLoopPassAdaptor(std::move(LPM2)));
+    MPM.addPass(createModuleToFunctionPassAdaptor(std::move(FPM2)));
+  }
+
 
   // Add the core optimizing pipeline.
   MPM.addPass(createModuleToFunctionPassAdaptor(std::move(OptimizePM)));

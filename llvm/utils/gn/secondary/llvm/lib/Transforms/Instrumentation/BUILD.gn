@@ -28,5 +28,6 @@ static_library("Instrumentation") {
     "SanitizerCoverage.cpp",
     "ThreadSanitizer.cpp",
     "ValueProfileCollector.cpp",
+    "LoopProfiler.cpp",
   ]
 }

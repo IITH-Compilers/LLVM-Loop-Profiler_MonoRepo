@@ -1,4 +1,5 @@
 add_llvm_component_library(LLVMInstrumentation
+  LoopProfiler.cpp
   AddressSanitizer.cpp
   BoundsChecking.cpp
   CGProfile.cpp
